@@ -1,10 +1,9 @@
-from datetime import datetime, timedelta
 import bcrypt
 from jose import jwt, JWTError
 from fastapi import HTTPException
 from dotenv import load_dotenv
 import os
-
+from datetime import datetime, timedelta, timezone
 load_dotenv()
 
 SECRET_KEY = os.getenv("SECRET_KEY")
@@ -26,7 +25,8 @@ def verify_pwd(plain_pwd:str,hashed_pwd:str) -> bool:
 
 def create_access_token(data:dict) -> str:
     copy_data = data.copy()
-    copy_data["exp"] = datetime.utcnow() + timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
+
+    copy_data["exp"] = datetime.now(timezone.utc) + timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
     return jwt.encode(copy_data,SECRET_KEY,ALGORITHM)
 def decode_access_token(token: str) -> str:
     try:

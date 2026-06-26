@@ -1,126 +1,101 @@
-# ✅ To-Do API
+# To-Do API
 
-A production-structured REST API built with **FastAPI**, featuring JWT authentication, layered architecture, and database migrations. Built as a learning project to practice real-world backend patterns — not just a `main.py` dump.
+A REST API built with FastAPI that I wrote to learn how real backends are structured — not just how to make endpoints work, but how to organize code so it doesn't become a mess when it grows.
+
+ This one separates concerns properly: routers handle HTTP, services handle logic, models handle data. Each layer only knows what it needs to know.
 
 ---
 
-## 🏗️ Architecture
+## Architecture
 
 ```
 app/
 ├── core/
-│   └── dependencies.py       # Reusable FastAPI dependencies (get_current_user)
+│   └── dependencies.py       # get_current_user — used across all protected routes
 ├── db/
-│   ├── database.py           # SQLAlchemy engine, session, Base
+│   ├── database.py           # engine, session, Base
 │   └── models/
-│       ├── user.py           # Users ORM model
-│       └── task.py           # Tasks ORM model
+│       ├── user.py           # Users table
+│       └── task.py           # Tasks table
 ├── models/
-│   ├── user.py               # Pydantic schemas (UserCreate, UserResponse, etc.)
-│   └── task.py               # Pydantic schemas (Task, TaskUpdate, TaskResponse)
+│   ├── user.py               # Pydantic schemas for users
+│   └── task.py               # Pydantic schemas for tasks
 ├── routers/
 │   ├── auth.py               # /auth routes
 │   └── task.py               # /tasks routes
 ├── services/
-│   ├── auth_service.py       # JWT encode/decode, bcrypt hashing
-│   ├── user_service.py       # Register, login business logic
-│   └── task_service.py       # Task CRUD business logic
-└── main.py                   # App entrypoint, router registration
-alembic/                      # Migration files
+│   ├── auth_service.py       # JWT + bcrypt
+│   ├── user_service.py       # register, login
+│   └── task_service.py       # task CRUD
+└── main.py                   # app entry point, router registration
+alembic/                      # migration history
 ```
 
-> **Routers are thin.** All business logic lives in services. Routers just bind URLs to functions and declare `response_model`.
+Routers are thin — they bind URLs to service functions and declare `response_model`. That's it. No DB calls, no business logic.
 
 ---
 
-## 🚀 Features
+## Tech Stack
 
-- **JWT Authentication** — register, login, protected routes via `OAuth2PasswordBearer`
-- **Full Task CRUD** — create, read, update, delete tasks
-- **Filtering** — by category, status, and deadline
-- **Response Models** — strict Pydantic output schemas, no field leakage
-- **Database Migrations** — Alembic for schema evolution without data loss
-- **Password Security** — bcrypt hashing via `passlib`
-
----
-
-## 🛠️ Tech Stack
-
-| Layer | Technology |
+| | |
 |---|---|
 | Framework | FastAPI |
-| ORM | SQLAlchemy 2.0 (Mapped / mapped_column) |
-| Database | SQLite (via Alembic migrations) |
+| ORM | SQLAlchemy 2.0 |
+| Database | PostgreSQL (via Docker) |
 | Auth | JWT (python-jose) + bcrypt |
 | Validation | Pydantic v2 |
 | Migrations | Alembic |
+| Tests | pytest + httpx |
+| Containerization | Docker + docker-compose |
 
 ---
 
-## ⚡ Getting Started
+## Getting Started
 
-### 1. Clone and set up environment
-
-```bash
-git clone https://github.com/Sudhanshukumar0007/todo-api
-cd todo-api
-python -m venv .venv
-.venv\Scripts\activate      # Windows
-source .venv/bin/activate   # Mac/Linux
-pip install -r requirements.txt
-```
-
-### 2. Run migrations
+Clone the repo and make sure Docker Desktop is running.
 
 ```bash
-alembic upgrade head
+git clone https://github.com/Sudhanshukumar0007/to-do-app.git
+cd to-do-app
+cp .env.example .env
 ```
 
-### 3. Start the server
+Edit `.env` with your values, then:
 
 ```bash
-uvicorn app.main:app --reload
+docker-compose up --build
 ```
 
-### 4. Open Swagger UI
+That's it. Docker spins up the API and PostgreSQL, runs Alembic migrations, and starts the server. No manual setup.
 
-```
-http://127.0.0.1:8000/docs
-```
+Open `http://127.0.0.1:8000/docs` to explore the API.
 
 ---
 
-## 📡 API Endpoints
+## API
 
 ### Auth
 | Method | Endpoint | Description |
 |---|---|---|
-| POST | `/auth/register` | Register a new user |
-| POST | `/auth/login` | Login and get JWT token |
+| POST | `/auth/register` | Create an account |
+| POST | `/auth/login` | Get a JWT token |
 
-### Tasks (🔒 JWT required)
+### Tasks (JWT required)
 | Method | Endpoint | Description |
 |---|---|---|
-| GET | `/tasks/` | Get all tasks for current user |
-| POST | `/tasks/` | Create a new task |
+| GET | `/tasks/` | All tasks for the current user |
+| POST | `/tasks/` | Create a task |
 | PUT | `/tasks/{task_id}` | Update a task |
 | DELETE | `/tasks/{task_id}` | Delete a task |
-| GET | `/tasks/category/{category}` | Filter tasks by category |
-| GET | `/tasks/status/{status}` | Filter tasks by status |
-| GET | `/tasks/deadline/{deadline}` | Get tasks before a deadline |
+| GET | `/tasks/category/{category}` | Filter by category |
+| GET | `/tasks/status/{status}` | Filter by status |
+| GET | `/tasks/deadline/{deadline}` | Tasks before a deadline |
+
+To use protected routes in Swagger: login → copy the token → click Authorize → paste it.
 
 ---
 
-## 🔒 Authentication Flow
-
-1. Register via `POST /auth/register`
-2. Login via `POST /auth/login` → get `access_token`
-3. Click **Authorize** in Swagger UI and paste the token
-4. All `/tasks/` routes are now accessible
-
----
-
-## 📋 Task Schema
+## Task Schema
 
 ```json
 {
@@ -132,47 +107,53 @@ http://127.0.0.1:8000/docs
 }
 ```
 
-**Category options:** `Mindfulness`, `Daily chores`, `Productive`, `Learning`, `Physical`
+Category options: `Mindfulness`, `Daily chores`, `Productive`, `Learning`, `Physical`
 
-**Status options:** `Completed`, `Ongoing`, `Pending`
+Status options: `Completed`, `Ongoing`, `Pending`
 
 ---
 
-## 🗄️ Database Migrations (Alembic)
+## Running Tests
 
 ```bash
-# Apply all migrations
-alembic upgrade head
-
-# Check current migration
-alembic current
-
-# View migration history
-alembic history
-
-# Undo last migration
-alembic downgrade -1
+pytest tests/ -v
 ```
 
----
-
-## 📁 Key Design Decisions
-
-- **Services own the logic** — routers never touch the DB directly
-- **`response_model` on every route** — API output is always predictable and safe
-- **Alembic over `create_all`** — schema changes are versioned and reversible
-- **`model_dump(exclude_unset=True)` for PATCH-style updates** — only provided fields are updated
+Tests use a separate SQLite database so they never touch your real data. Auth and all task endpoints are covered.
 
 ---
 
-## 🔭 Roadmap
+## Migrations
+
+```bash
+alembic upgrade head      # apply all pending migrations
+alembic current           # see where the DB is
+alembic history           # full migration log
+alembic downgrade -1      # roll back one migration
+```
+
+Schema changes go through Alembic — no `create_all()` in production code.
+
+---
+
+## What I learned building this
+
+- How to structure a FastAPI project so it doesn't collapse when you add features
+- Why `response_model` matters — without it, internal DB fields leak into API responses
+- How Alembic migrations work and why `create_all()` isn't enough for real projects
+- How Docker Compose connects services — the API container talks to the PostgreSQL container by service name, not localhost
+- Writing tests that override dependencies so they never touch the real database
+
+---
+
+## Roadmap
 
 - [x] pytest test suite
 - [x] Docker + docker-compose
-- [x] PostgreSQL support
+- [x] PostgreSQL
 - [ ] Async SQLAlchemy (AsyncSession + asyncpg)
 - [ ] Rate limiting
 
 ---
 
-*Built by [Sudhanshu Kumar](https://github.com/Sudhanshukumar0007) — B.Tech CSE (AI/ML), KIET Group of Institutions*
+Built by [Sudhanshu Kumar](https://github.com/Sudhanshukumar0007) — B.Tech CSE (AI), KIET Group of Institutions

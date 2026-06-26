@@ -169,7 +169,7 @@ alembic downgrade -1
 
 - [x] pytest test suite
 - [x] Docker + docker-compose
-- [ ] PostgreSQL support
+- [x] PostgreSQL support
 - [ ] Async SQLAlchemy (AsyncSession + asyncpg)
 - [ ] Rate limiting
 

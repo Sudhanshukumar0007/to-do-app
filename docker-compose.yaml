@@ -1,4 +1,15 @@
 services:
+  db:
+    image: postgres:16
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: todoapp
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+
   api:
     build: .
     ports:
@@ -7,3 +18,8 @@ services:
       - .env
     volumes:
       - ./data:/app/data
+    depends_on:
+      - db
+
+volumes:
+  postgres_data:
